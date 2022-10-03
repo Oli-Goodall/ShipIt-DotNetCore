@@ -23,7 +23,7 @@ namespace ShipIt.Controllers
         }
 
         [HttpPost("")]
-        public void Post([FromBody] OutboundOrderRequestModel request)
+        public double Post([FromBody] OutboundOrderRequestModel request)
         {
             Log.Info(String.Format("Processing outbound order: {0}", request));
 
@@ -94,6 +94,20 @@ namespace ShipIt.Controllers
             }
 
             _stockRepository.RemoveStock(request.WarehouseId, lineItems);
+            return(HowManyTrucks(request));
+        }
+
+        public double HowManyTrucks([FromBody] OutboundOrderRequestModel request)
+        {
+            double weightOfOrder = 0;
+            foreach (var orderLine in request.OrderLines)
+            {
+                var productWeight = _productRepository.GetProductByGtin(orderLine.gtin).Weight;
+                var totalProductWeight = productWeight * orderLine.quantity;
+                weightOfOrder += totalProductWeight;
+            }
+            double numberOfTrucks = (int)Math.Ceiling(weightOfOrder / 2000000);
+            return numberOfTrucks;
         }
     }
 }
